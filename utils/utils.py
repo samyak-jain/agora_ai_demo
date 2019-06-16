@@ -6,9 +6,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 import numpy as np
-
-#import matplotlib.pyplot as plt
-#import matplotlib.patches as patches
+import random
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 
 
 def load_classes(path):
@@ -256,3 +256,28 @@ def build_targets(
 def to_categorical(y, num_classes):
     """ 1-hot encodes a tensor """
     return torch.from_numpy(np.eye(num_classes, dtype="uint8")[y])
+
+
+
+def plot_helper(x1, y1, x2, y2, cls_pred, img, img_size, detections):
+    
+    # Get bounding-box colors
+    cmap = plt.get_cmap('tab20b')
+    colors = [cmap(i) for i in np.linspace(0, 1, 20)]
+    
+    unique_labels = detections[:, -1].cpu().unique()
+    n_cls_preds = len(unique_labels)
+    bbox_colors = random.sample(colors, n_cls_preds)
+        
+    pad_x = max(img.shape[0] - img.shape[1], 0) * (img_size / max(img.shape))
+    pad_y = max(img.shape[1] - img.shape[0], 0) * (img_size / max(img.shape))
+    unpad_h = img_size - pad_y
+    unpad_w = img_size - pad_x
+    
+    box_h = ((y2 - y1) / unpad_h) * img.shape[0]
+    box_w = ((x2 - x1) / unpad_w) * img.shape[1]
+    y1 = ((y1 - pad_y // 2) / unpad_h) * img.shape[0]
+    x1 = ((x1 - pad_x // 2) / unpad_w) * img.shape[1]
+    color = bbox_colors[int(np.where(unique_labels == int(cls_pred))[0])]
+    bbox = patches.Rectangle((x1, y1), box_w, box_h, linewidth=2, edgecolor=color, facecolor='none')
+    return bbox, color
